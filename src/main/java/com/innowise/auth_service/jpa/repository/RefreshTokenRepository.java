@@ -17,9 +17,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     List<RefreshToken> findByUserIdAndRevokedFalse(Long userId);
 
-    boolean deleteByUserId(Long userId);
-
     void deleteByExpiresAtBefore(Instant expiresAtBefore);
 
     boolean existsByToken(String token);
+
+    void deleteAllByUserId(Long userId);
 }
