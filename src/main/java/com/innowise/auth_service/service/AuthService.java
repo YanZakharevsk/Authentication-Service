@@ -7,6 +7,7 @@ import com.innowise.auth_service.dto.request.ValidateTokenRequest;
 import com.innowise.auth_service.dto.response.AuthResponse;
 import com.innowise.auth_service.dto.response.RegisterResponse;
 import com.innowise.auth_service.dto.response.TokenValidationResponse;
+
 public interface AuthService {
 
     RegisterResponse register(RegisterRequest request);
