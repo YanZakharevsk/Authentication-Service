@@ -7,6 +7,7 @@ import com.innowise.auth_service.dto.request.ValidateTokenRequest;
 import com.innowise.auth_service.dto.response.AuthResponse;
 import com.innowise.auth_service.dto.response.RegisterResponse;
 import com.innowise.auth_service.dto.response.TokenValidationResponse;
+import org.springframework.security.core.Authentication;
 
 public interface AuthService {
 
@@ -18,7 +19,9 @@ public interface AuthService {
 
     TokenValidationResponse validateToken(ValidateTokenRequest request);
 
-    void logout(String refreshToken);
+    void logout(Long userId);
 
     boolean deleteCredentials(Long userId);
+
+    Long getUserIdByLogin(String login);
 }
