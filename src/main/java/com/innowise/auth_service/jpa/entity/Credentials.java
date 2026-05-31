@@ -31,7 +31,7 @@ public class Credentials {
 
     @Enumerated(value = EnumType.STRING)
     @Column(name = "user_role", nullable = false)
-    UserRole userRole;
+    private UserRole userRole;
 
     @Override
     public final boolean equals(Object o) {
