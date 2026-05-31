@@ -1,13 +1,12 @@
 package com.innowise.auth_service.jpa.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.Objects;
 
 @Entity
@@ -33,6 +32,13 @@ public class RefreshToken {
 
     @Column(nullable = false)
     private Boolean revoked = false;
+
+    public RefreshToken(Long userId, String token, Instant expiresAt) {
+        this.userId = userId;
+        this.token = token;
+        this.expiresAt = expiresAt;
+        this.revoked = false;
+    }
 
     @Override
     public final boolean equals(Object o) {
