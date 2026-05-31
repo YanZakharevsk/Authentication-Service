@@ -8,50 +8,53 @@ import com.innowise.auth_service.dto.request.ValidateTokenRequest;
 import com.innowise.auth_service.dto.response.AuthResponse;
 import com.innowise.auth_service.dto.response.RegisterResponse;
 import com.innowise.auth_service.dto.response.TokenValidationResponse;
-import com.innowise.auth_service.exception.InvalidCredentialsException;
-import com.innowise.auth_service.exception.InvalidJwtTokenException;
-import com.innowise.auth_service.exception.UserNotFoundException;
-import com.innowise.auth_service.exception.UsernameAlreadyExistsException;
+import com.innowise.auth_service.exception.*;
 import com.innowise.auth_service.jpa.entity.Credentials;
 import com.innowise.auth_service.jpa.entity.RefreshToken;
 import com.innowise.auth_service.jpa.enums.UserRole;
 import com.innowise.auth_service.jpa.repository.CredentialsRepository;
+import com.innowise.auth_service.jpa.repository.RefreshTokenRepository;
 import com.innowise.auth_service.security.JwtTokenProvider;
 import com.innowise.auth_service.service.AuthService;
 import com.innowise.auth_service.service.RefreshTokenService;
-import io.jsonwebtoken.Claims;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.security.auth.login.CredentialNotFoundException;
 
 @Service
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final CredentialsRepository credentialsRepository;
     private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final AuthMapper mapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
 
-    public AuthServiceImpl(CredentialsRepository credentialsRepository, RefreshTokenService refreshTokenService, AuthMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager) {
+    public AuthServiceImpl(CredentialsRepository credentialsRepository, RefreshTokenService refreshTokenService, RefreshTokenRepository refreshTokenRepository, AuthMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager) {
         this.credentialsRepository = credentialsRepository;
         this.refreshTokenService = refreshTokenService;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
     }
 
+    @Transactional
     @Override
     public RegisterResponse register(RegisterRequest request) {
         if(!credentialsRepository.existsByLogin(request.getLogin())){
 
             Credentials credentials = mapper.toCredentials(request);
+            credentials.setUserRole(UserRole.USER);
             credentials.setPassword(passwordEncoder.encode(request.getPassword()));
 
             return mapper.toRegisterResponse(credentialsRepository.save(credentials));
@@ -63,18 +66,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
 
-        Credentials credentials = credentialsRepository.findByLogin(request.getLogin())
-                .orElseThrow(() -> new CredentialsNotFoundException(request.getLogin()));
-
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(credentials.getLogin(), credentials.getPassword()));
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getLogin(),
+                            request.getPassword())
+            );
 
-            String accessToken = jwtTokenProvider.createAccessToken(credentials.getId(), credentials.getUserRole());
-            String refreshToken = jwtTokenProvider.createRefreshToken(credentials.getId(), credentials.getUserRole());
+            Credentials credentials = credentialsRepository.findByLogin(request.getLogin())
+                    .orElseThrow(() -> new CredentialsNotFoundException());
+
+            String accessToken = jwtTokenProvider.createAccessToken(credentials.getUserId(), credentials.getUserRole());
+            String refreshToken = jwtTokenProvider.createRefreshToken(credentials.getUserId(), credentials.getUserRole());
 
             refreshTokenService.createRefreshToken(credentials.getUserId(), refreshToken);
 
             AuthResponse response = new AuthResponse();
+            response.setUserId(credentials.getUserId());
             response.setAccessToken(accessToken);
             response.setRefreshToken(refreshToken);
 
@@ -86,18 +94,20 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse refreshToken(RefreshRequest request) {
-
         RefreshToken storeRefreshToken = refreshTokenService.findByRefreshToken(request.getRefreshToken());
-
         refreshTokenService.verifyExpiration(storeRefreshToken);
 
         Credentials credentials = credentialsRepository.findByUserId(storeRefreshToken.getUserId()).orElseThrow(() -> new CredentialsNotFoundException());
-
         String newAccessToken = jwtTokenProvider.createAccessToken(credentials.getUserId(), credentials.getUserRole());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(credentials.getUserId(), credentials.getUserRole());
+
+        refreshTokenService.revokeByUserId(credentials.getUserId());
+        refreshTokenService.createRefreshToken(credentials.getUserId(), newRefreshToken);
 
         AuthResponse response = new AuthResponse();
+        response.setUserId(credentials.getUserId());
         response.setAccessToken(newAccessToken);
-        response.setRefreshToken(storeRefreshToken.toString());
+        response.setRefreshToken(newRefreshToken);
 
         return response;
     }
@@ -113,23 +123,29 @@ public class AuthServiceImpl implements AuthService {
                 valid);
     }
 
+    @Transactional
     @Override
-    public void logout(String refreshToken) {
-
-        RefreshToken token = refreshTokenService.findByRefreshToken(refreshToken);
-
-        token.setRevoked(true);
+    public void logout(Long userId) {
+        refreshTokenService.revokeByUserId(userId);
     }
 
+    @Transactional
     @Override
     public boolean deleteCredentials(Long userId) {
 
         Credentials credentials = credentialsRepository.findByUserId(userId).orElseThrow(() -> new CredentialsNotFoundException());
 
         credentialsRepository.delete(credentials);
-        refreshTokenService.deleteRefreshTokenByUserId(userId);
+        refreshTokenService.deleteRefreshTokensByUserId(userId);
 
         return true;
+    }
+
+    @Override
+    public Long getUserIdByLogin(String login) {
+        Credentials credentials = credentialsRepository.findByLogin(login)
+                .orElseThrow(() -> new CredentialsNotFoundException());
+        return credentials.getUserId();
     }
 
 }
