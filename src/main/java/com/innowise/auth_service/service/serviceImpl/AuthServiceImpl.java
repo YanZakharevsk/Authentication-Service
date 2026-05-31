@@ -42,10 +42,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
-
 @Service
 @Slf4j
-@Service
 public class AuthServiceImpl implements AuthService {
 
     private final CredentialsRepository credentialsRepository;
