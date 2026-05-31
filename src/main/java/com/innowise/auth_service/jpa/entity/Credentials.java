@@ -32,7 +32,6 @@ public class Credentials {
     @Enumerated(value = EnumType.STRING)
     @Column(name = "user_role", nullable = false)
     private UserRole userRole;
-
     @Override
     public final boolean equals(Object o) {
         if(this == o) return true;
