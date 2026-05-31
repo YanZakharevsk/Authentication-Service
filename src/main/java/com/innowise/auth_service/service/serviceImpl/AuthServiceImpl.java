@@ -44,6 +44,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@Service
 public class AuthServiceImpl implements AuthService {
 
     private final CredentialsRepository credentialsRepository;
@@ -56,10 +57,9 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
 
 
-    public AuthServiceImpl(CredentialsRepository credentialsRepository, RefreshTokenService refreshTokenService, RefreshTokenRepository refreshTokenRepository, AuthMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager) {
+    public AuthServiceImpl(CredentialsRepository credentialsRepository, RefreshTokenService refreshTokenService, AuthMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager) {
         this.credentialsRepository = credentialsRepository;
         this.refreshTokenService = refreshTokenService;
-        this.refreshTokenRepository = refreshTokenRepository;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
