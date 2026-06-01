@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+
+  auth-postgres:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth-service-network
+
+  auth-app:
+    build: .
+    image: yanusevich/auth-service
+    restart: on-failure
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - auth-postgres
+    networks:
+      - auth-service-network
+
+volumes:
+  auth_postgres_data:
+
+networks:
+  auth-service-network:
+    external: true
