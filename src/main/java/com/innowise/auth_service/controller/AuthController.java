@@ -47,10 +47,4 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @DeleteMapping("/credentials/{userId}")
-    public ResponseEntity<Void> deleteCredentials(@PathVariable Long userId){
-        authService.deleteCredentials(userId);
-        return ResponseEntity.noContent().build();
-    }
 }

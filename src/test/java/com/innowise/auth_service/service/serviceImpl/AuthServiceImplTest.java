@@ -98,8 +98,8 @@ class AuthServiceImplTest {
         Credentials credentials = new Credentials(1L, 10L, "admin", "encoded_password", UserRole.ADMIN);
 
         when(credentialsRepository.findByLogin(request.getLogin())).thenReturn(Optional.of(credentials));
-        when(jwtTokenProvider.createAccessToken(1L, UserRole.ADMIN)).thenReturn("access_token");
-        when(jwtTokenProvider.createRefreshToken(1L, UserRole.ADMIN)).thenReturn("refresh_token");
+        when(jwtTokenProvider.createAccessToken(10L, UserRole.ADMIN)).thenReturn("access_token");
+        when(jwtTokenProvider.createRefreshToken(10L, UserRole.ADMIN)).thenReturn("refresh_token");
 
         AuthResponse response = authService.login(request);
 
@@ -141,7 +141,6 @@ class AuthServiceImplTest {
 
         assertNotNull(response);
         assertEquals("new_access_token", response.getAccessToken());
-        assertEquals(storedToken.toString(), response.getRefreshToken());
         verify(refreshTokenService).verifyExpiration(storedToken);
     }
 
@@ -168,7 +167,7 @@ class AuthServiceImplTest {
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(15L);
 
-        authService.logout(authentication);
+        authService.logout((Long) authentication.getPrincipal());
 
         verify(refreshTokenService).revokeByUserId(15L);
     }

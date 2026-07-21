@@ -3,6 +3,7 @@ package com.innowise.auth_service.service.serviceImpl;
 import com.innowise.auth_service.jpa.repository.RefreshTokenRepository;
 import com.innowise.auth_service.service.RefreshTokenCleanupService;
 import jakarta.transaction.Transactional;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
