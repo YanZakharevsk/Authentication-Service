@@ -1,6 +1,5 @@
 package com.innowise.auth_service.dto.request;
 
-import com.innowise.auth_service.jpa.enums.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
